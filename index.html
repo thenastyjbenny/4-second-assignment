@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Button Timer</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="container">
+  <h1 class="text-center">Button Timer</h1>
+  <div class="text-center">
+    <button type="button" class="btn btn-primary btn-lg" id="timerButton">Start</button>
+    <div id="timerDisplay"></div>
+    <div id="chartContainer">
+      <canvas id="chart"></canvas>
+    </div>
+    <button type="button" class="btn btn-secondary" id="summaryButton">View Summary</button>
+    <div id="summaryDisplay"></div>
+  </div>
+</div>
+<script>
+  const timerButton = document.getElementById("timerButton");
+  const timerDisplay = document.getElementById("timerDisplay");
+  const summaryButton = document.getElementById("summaryButton");
+  const summaryDisplay = document.getElementById("summaryDisplay");
+  const chartContainer = document.getElementById("chartContainer");
+  const chart = new Chart(document.getElementById("chart"), {
+    type: "line",
+    data: {
+      labels: [],
+      datasets: [{
+        label: "Elapsed Time",
+        data: [],
+        borderColor: "blue",
+        fill: false
+      }]
+    },
+    options: {
+      scales: {
+        xAxes: [{
+          type: "linear",
+          position: "bottom"
+        }]
+      }
+    }
+  });
+
+  let startTime;
+  let numAttempts = 0;
+  let totalElapsed = 0;
+  let minElapsed = Infinity;
+  let maxElapsed = -Infinity;
+  let attemptData = [];
+
+  function startTimer() {
+    timerButton.textContent = "Stop";
+    timerButton.classList.remove("btn-primary");
+    timerButton.classList.add("btn-danger");
+    startTime = Date.now();
+    timerDisplay.style.backgroundColor = "white";
+    timerDisplay.textContent = "0.00 seconds";
+    timerDisplay.style.display = "block";
+  }
+
+  function stopTimer() {
+    let stopTime = Date.now();
+    let elapsed = (stopTime - startTime) / 1000;
+    timerButton.textContent = "Start";
+    timerButton.classList.remove("btn-danger");
+    timerButton.classList.add("btn-primary");
+    timerDisplay.style.backgroundColor = getTimerColor(elapsed);
+    timerDisplay.textContent = elapsed.toFixed(2) + " seconds";
+    timerDisplay.style.display = "block";
+    numAttempts++;
+    totalElapsed += elapsed;
+    minElapsed = Math.min(minElapsed, elapsed);
+    maxElapsed = Math.max(maxElapsed, elapsed);
+    attemptData.push({
+      attemptNum: numAttempts,
+      startTime: new Date(startTime).toLocaleString(),
+      stopTime: new Date(stopTime).toLocaleString(),
+      elapsed: elapsed.toFixed(2)
+    });
+    chart.data.labels.push(numAttempts);
+    chart.data.datasets[0].data.push(elapsed);
+    chart.update();
+  }
+  function getTimerColor(elapsed) {
+    if (elapsed >= 3.8 && elapsed <= 4.2) {
+      return "green";
+    } else if (elapsed >= 3.6 && elapsed <= 4.4) {
+      return "blue";
+    } else if (elapsed >= 3.5 && elapsed <= 4.5) {
+      return "yellow";
+    } else {
+      return "red";
+    }
+  }
+
+  function viewSummary() {
+    let avgElapsed = totalElapsed / numAttempts;
+    let summaryHtml = `
+			<p>Total Attempts: ${numAttempts}</p>
+			<p>Minimum Elapsed Time: ${minElapsed.toFixed(2)} seconds</p>
+			<p>Maximum Elapsed Time: ${maxElapsed.toFixed(2)} seconds</p>
+			<p>Average Elapsed Time: ${avgElapsed.toFixed(2)} seconds</p>
+		`;
+    if (numAttempts > 0) {
+      summaryHtml += `
+				<h4>Attempt Results</h4>
+				<table class="table">
+					<thead>
+						<tr>
+							<th>Attempt Number</th>
+							<th>Start Time</th>
+							<th>Stop Time</th>
+							<th>Elapsed Time</th>
+						</tr>
+					</thead>
+					<tbody>
+			`;
+      attemptData.forEach(attempt => {
+        summaryHtml += `
+					<tr>
+						<td>${attempt.attemptNum}</td>
+						<td>${attempt.startTime}</td>
+						<td>${attempt.stopTime}</td>
+						<td>${attempt.elapsed} seconds</td>
+					</tr>
+				`;
+      });
+      summaryHtml += `
+					</tbody>
+				</table>
+			`;
+    }
+    summaryDisplay.innerHTML = summaryHtml;
+  }
+
+  timerButton.addEventListener("click", function() {
+    if (timerButton.textContent === "Start") {
+      startTimer();
+    } else {
+      stopTimer();
+    }
+  });
+
+  summaryButton.addEventListener("click", function() {
+    viewSummary();
+  });
+</script>
+</body>
+</html>
